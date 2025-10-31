@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Search</title>
+    <title>Universal Book Search</title>
     <style>
         /* Basic styling for the app */
         body {
@@ -102,20 +102,19 @@
             -webkit-line-clamp: 5; 
             -webkit-box-orient: vertical;  
             overflow: hidden;
-            /* Make text take up remaining space */
             flex-grow: 1; 
         }
         
-        /* --- 4. NEW: Button Styling --- */
+        /* --- 4. Button Styling --- */
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 20px; /* Add space above the buttons */
+            margin-top: 20px; 
             width: 100%;
         }
 
         .btn {
-            flex-grow: 1; /* Make buttons share space */
+            flex-grow: 1; 
             text-decoration: none;
             padding: 10px;
             font-size: 14px;
@@ -146,6 +145,17 @@
             color: #fff;
         }
 
+        /* --- NEW: Purchase Button Style --- */
+        .btn-purchase {
+            color: #e67e22;
+            border-color: #e67e22;
+        }
+        .btn-purchase:hover {
+            background-color: #e67e22;
+            color: #fff;
+        }
+
+
         /* --- 5. Other --- */
         .message {
             text-align: center;
@@ -159,7 +169,7 @@
 <body>
 
     <div class="search-container">
-        <h1>📚 Book Search Engine</h1>
+        <h1>📚 Universal Book Search</h1>
         <input type="text" id="searchInput" placeholder="Enter book title or ISBN...">
         <button id="searchButton">Search</button>
     </div>
@@ -190,7 +200,8 @@
             resultsContainer.innerHTML = '<p class="message">Searching...</p>';
 
             try {
-                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+                // --- MODIFIED: Added '&country=IN' to the API call ---
+                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&country=IN`);
                 
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -205,7 +216,6 @@
             }
         }
 
-        // --- MODIFIED: This function is now changed to build elements ---
         function displayResults(books) {
             resultsContainer.innerHTML = "";
 
@@ -216,76 +226,76 @@
 
             books.forEach(book => {
                 const volumeInfo = book.volumeInfo;
+                // --- NEW: Get the saleInfo object ---
+                const saleInfo = book.saleInfo;
 
                 // Safely get the data
                 const coverImage = volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/150x220.png?text=No+Cover';
                 const title = volumeInfo.title || 'No Title';
                 const authors = volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author';
                 const synopsis = volumeInfo.description || 'No synopsis available.';
+                const infoLink = volumeInfo.infoLink || '#'; 
                 
-                // NEW: Get the link to the book's info page
-                const infoLink = volumeInfo.infoLink || '#'; // Use '#' as a fallback if no link
+                // --- NEW: Check if the book is for sale and get the link ---
+                const isForSale = saleInfo && saleInfo.saleability === 'FOR_SALE';
+                const buyLink = saleInfo.buyLink;
 
-                // --- NEW: Create elements instead of using innerHTML ---
-                // This gives us more control
-                
-                // 1. Create the main card div
+                // Create elements
                 const bookCard = document.createElement('div');
                 bookCard.classList.add('book-card');
 
-                // 2. Create the image
                 const img = document.createElement('img');
                 img.src = coverImage;
                 img.alt = `Cover of ${title}`;
 
-                // 3. Create title
                 const titleEl = document.createElement('h3');
                 titleEl.textContent = title;
 
-                // 4. Create author
                 const authorEl = document.createElement('h4');
                 authorEl.textContent = `by ${authors}`;
 
-                // 5. Create synopsis
                 const synopsisEl = document.createElement('p');
                 synopsisEl.textContent = synopsis;
 
-                // 6. NEW: Create the button group
                 const buttonGroup = document.createElement('div');
                 buttonGroup.classList.add('button-group');
 
-                // 7. NEW: Create Download Button (as a link)
+                // Create Download Button
                 const downloadBtn = document.createElement('a');
                 downloadBtn.classList.add('btn', 'btn-download');
                 downloadBtn.href = coverImage;
-                
-                // The 'download' attribute tells the browser to download the file
-                // We'll name the file based on the book title
                 downloadBtn.setAttribute('download', `${title}-cover.jpg`);
                 downloadBtn.textContent = 'Download';
 
-                // 8. NEW: Create Share Button (as a link)
+                // Create Share Button
                 const shareBtn = document.createElement('a');
                 shareBtn.classList.add('btn', 'btn-share');
                 shareBtn.href = infoLink;
-                shareBtn.target = '_blank'; // Open in a new tab
-                shareBtn.rel = 'noopener noreferrer'; // Security best practice
+                shareBtn.target = '_blank'; 
+                shareBtn.rel = 'noopener noreferrer'; 
                 shareBtn.textContent = 'Share Link';
 
-                // --- 9. Append all elements together ---
-                
-                // Add buttons to the button group
+                // --- NEW: Create and conditionally add the Purchase Button ---
+                if (isForSale && buyLink) {
+                    const purchaseBtn = document.createElement('a');
+                    purchaseBtn.classList.add('btn', 'btn-purchase');
+                    purchaseBtn.href = buyLink;
+                    purchaseBtn.target = '_blank';
+                    purchaseBtn.rel = 'noopener noreferrer';
+                    purchaseBtn.textContent = 'Purchase';
+                    buttonGroup.appendChild(purchaseBtn); // Add to group
+                }
+
+                // Append all elements
                 buttonGroup.appendChild(downloadBtn);
-                buttonGroup.appendChild(shareBtn);
+Dos.appendChild(shareBtn);
                 
-                // Add all elements to the book card
                 bookCard.appendChild(img);
                 bookCard.appendChild(titleEl);
                 bookCard.appendChild(authorEl);
                 bookCard.appendChild(synopsisEl);
-                bookCard.appendChild(buttonGroup); // Add the button group
+                bookCard.appendChild(buttonGroup); 
 
-                // Add the completed card to the results container
                 resultsContainer.appendChild(bookCard);
             });
         }
